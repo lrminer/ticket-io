@@ -4,16 +4,21 @@ import "@atlaskit/css-reset";
 import Column from "./column";
 import initialData from "./initial-data";
 import styled from "styled-components";
-import { DragDropContext } from "react-beautiful-dnd";
+import { DragDropContext, Droppable } from "react-beautiful-dnd";
 
-const Container = styled.div``;
+const Container = styled.div`
+  display: flex;
+`;
 
 class App extends React.Component {
   state = initialData;
 
-  onDragStart = () => {
-    document.body.style.color = "orange";
-    document.body.style.transition = "background-color 0.2s ease";
+  onDragStart = start => {
+    // document.body.style.color = "orange";
+    // document.body.style.transition = "background-color 0.2s ease";
+    const homeIndex = this.state.columnOrder.indexOf(start.source.droppableId);
+
+    this.setState({ homeIndex });
   };
 
   onDragUpdate = update => {
@@ -25,10 +30,12 @@ class App extends React.Component {
   };
 
   onDragEnd = result => {
-    document.body.style.color = "inherit";
-    document.body.style.backgroundColor = "inherit";
+    this.setState({ homeIndex: null });
 
-    const { destination, source, draggableId } = result;
+    // document.body.style.color = "inherit";
+    // document.body.style.backgroundColor = "inherit";
+
+    const { destination, source, draggableId, type } = result;
 
     if (!destination) {
       return;
@@ -38,6 +45,20 @@ class App extends React.Component {
       destination.droppableId === source.droppableId &&
       destination.index === source.index
     ) {
+      return;
+    }
+
+    if (type === "column") {
+      const newColumnOrder = Array.from(this.state.columnOrder);
+      newColumnOrder.splice(source.index, 1);
+      newColumnOrder.splice(destination.index, 0, draggableId);
+
+      const newState = {
+        ...this.state,
+        columnOrder: newColumnOrder
+      };
+
+      this.setState(newState);
       return;
     }
 
@@ -105,16 +126,34 @@ class App extends React.Component {
         onDragUpdate={this.onDragUpdate}
         onDragEnd={this.onDragEnd} // only required callback
       >
-        <Container>
-          {this.state.columnOrder.map(columnId => {
-            const column = this.state.columns[columnId];
-            const tasks = column.taskIds.map(
-              taskId => this.state.tasks[taskId]
-            );
+        <Droppable
+          droppableId="all-columns"
+          direction="horizontal"
+          type="column"
+        >
+          {provided => (
+            <Container {...provided.droppableProps} ref={provided.innerRef}>
+              {this.state.columnOrder.map((columnId, index) => {
+                const column = this.state.columns[columnId];
+                const tasks = column.taskIds.map(
+                  taskId => this.state.tasks[taskId]
+                );
+                const isDropDisabled = index < this.state.homeIndex;
 
-            return <Column key={column.id} column={column} tasks={tasks} />;
-          })}
-        </Container>
+                return (
+                  <Column
+                    key={column.id}
+                    column={column}
+                    tasks={tasks}
+                    index={index}
+                    isDropDisabled={isDropDisabled}
+                  />
+                );
+              })}
+              {provided.placeholder}
+            </Container>
+          )}
+        </Droppable>
       </DragDropContext>
     );
   }
