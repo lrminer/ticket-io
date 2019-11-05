@@ -1,4 +1,11 @@
 # ticket-io
 
+MERN stack application
 
-A ticketing system that utilizes the MEAN stack
+## Utilizes
+- NodeJS
+- ReactJS
+- ExpressJS
+- axios
+- create-react-component-folder
+- react-beautiful-dnd
